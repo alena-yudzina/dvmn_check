@@ -1,9 +1,9 @@
 import os
 import time
+import urllib.parse
 
 import requests
 import telegram
-import urllib.parse
 from dotenv import load_dotenv
 
 
@@ -17,7 +17,7 @@ def form_message(lesson__info):
     else:
         message_result = 'Преподавателю все понравилось, можно приступать к следующему уроку!'
 
-    lesson_url = lesson__info[0]['lesson_url']
+    lesson_url = lesson__info['lesson_url']
     lesson_url = urllib.parse.urljoin('https://dvmn.org/', lesson_url)
     message_url = 'Ссылка на урок {}'.format(lesson_url)
 
@@ -46,10 +46,10 @@ def main():
         try:
             response = requests.get(url, headers=headers, timeout=60, params=payload)
         except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError) as e:
-            time.sleep(300)
+            time.sleep(60)
             continue
         lesson__info = response.json()['new_attempts'][0]
-        timestamp = lesson__info['timestamp']
+        timestamp = response.json()['last_attempt_timestamp']
         message = form_message(lesson__info)
         bot.send_message(text=message, chat_id=chat_id)
 
