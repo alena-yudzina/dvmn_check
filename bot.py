@@ -7,17 +7,17 @@ import telegram
 from dotenv import load_dotenv
 
 
-def form_message(lesson__info):
+def form_message(lesson_info):
 
-    lesson_title = lesson__info['lesson_title']
+    lesson_title = lesson_info['lesson_title']
     message_title = 'У вас проверили работу "{}"'.format(lesson_title)
 
-    if lesson__info['is_negative']:
+    if lesson_info['is_negative']:
         message_result = 'К сожалению, в работе нашлись ошибки.'
     else:
         message_result = 'Преподавателю все понравилось, можно приступать к следующему уроку!'
 
-    lesson_url = lesson__info['lesson_url']
+    lesson_url = lesson_info['lesson_url']
     lesson_url = urllib.parse.urljoin('https://dvmn.org/', lesson_url)
     message_url = 'Ссылка на урок {}'.format(lesson_url)
 
@@ -45,12 +45,20 @@ def main():
             }
         try:
             response = requests.get(url, headers=headers, timeout=60, params=payload)
-        except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError) as e:
+        except requests.exceptions.ReadTimeout:
+            continue
+        except requests.exceptions.ConnectionError:
             time.sleep(60)
             continue
-        lesson__info = response.json()['new_attempts'][0]
-        timestamp = response.json()['last_attempt_timestamp']
-        message = form_message(lesson__info)
+
+        response = response.json()
+        if response['status'] == 'timeout':
+            timestamp = response['timestamp_to_request']
+            continue
+        lesson_info = response['new_attempts'][0]
+        timestamp = response['last_attempt_timestamp']
+
+        message = form_message(lesson_info)
         bot.send_message(text=message, chat_id=chat_id)
 
 
