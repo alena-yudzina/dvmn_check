@@ -51,12 +51,12 @@ def main():
             time.sleep(60)
             continue
 
-        response = response.json()
-        if response['status'] == 'timeout':
-            timestamp = response['timestamp_to_request']
+        answer = response.json()
+        if answer['status'] == 'timeout':
+            timestamp = answer['timestamp_to_request']
             continue
-        lesson_info = response['new_attempts'][0]
-        timestamp = response['last_attempt_timestamp']
+        lesson_info = answer['new_attempts'][0]
+        timestamp = answer['last_attempt_timestamp']
 
         message = form_message(lesson_info)
         bot.send_message(text=message, chat_id=chat_id)
