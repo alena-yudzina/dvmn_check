@@ -1,3 +1,4 @@
+import logging
 import os
 import time
 import urllib.parse
@@ -32,6 +33,7 @@ def main():
     dvmn_token = os.environ['DVMN_TOKEN']
 
     bot = telegram.Bot(token=bot_token)
+    logging.warning('Бот запущен')
 
     headers = {
         'Authorization': dvmn_token
