@@ -8,6 +8,18 @@ import telegram
 from dotenv import load_dotenv
 
 
+class TelegramLogsHandler(logging.Handler):
+
+    def __init__(self, tg_bot, chat_id):
+        super().__init__()
+        self.chat_id = chat_id
+        self.tg_bot = tg_bot
+
+    def emit(self, record):
+        log_entry = self.format(record)
+        self.tg_bot.send_message(chat_id=self.chat_id, text=log_entry)
+
+
 def form_message(lesson_info):
 
     lesson_title = lesson_info['lesson_title']
@@ -27,13 +39,13 @@ def form_message(lesson_info):
 
 
 def main():
-    load_dotenv()
     bot_token = os.environ['BOT_TOKEN']
     chat_id = os.environ['CHAT_ID']
     dvmn_token = os.environ['DVMN_TOKEN']
 
     bot = telegram.Bot(token=bot_token)
-    logging.warning('Бот запущен')
+
+    logger.warning('Бот запущен')
 
     headers = {
         'Authorization': dvmn_token
@@ -42,27 +54,41 @@ def main():
     url = 'https://dvmn.org/api/long_polling/'
 
     while True:
-        payload = {
-            'timestamp': timestamp
-            }
         try:
-            response = requests.get(url, headers=headers, timeout=60, params=payload)
-        except requests.exceptions.ReadTimeout:
-            continue
-        except requests.exceptions.ConnectionError:
-            time.sleep(60)
-            continue
+            payload = {
+                'timestamp': timestamp
+                }
+            try:
+                response = requests.get(url, headers=headers, timeout=60, params=payload)
+            except requests.exceptions.ReadTimeout:
+                continue
+            except requests.exceptions.ConnectionError:
+                logger.warning('Проблемы с интернетом')
+                time.sleep(60)
+                continue
 
-        answer = response.json()
-        if answer['status'] == 'timeout':
-            timestamp = answer['timestamp_to_request']
-            continue
-        lesson_info = answer['new_attempts'][0]
-        timestamp = answer['last_attempt_timestamp']
+            answer = response.json()
+            if answer['status'] == 'timeout':
+                timestamp = answer['timestamp_to_request']
+                continue
+            lesson_info = answer['new_attempts'][0]
+            timestamp = answer['last_attempt_timestamp']
 
-        message = form_message(lesson_info)
-        bot.send_message(text=message, chat_id=chat_id)
+            message = form_message(lesson_info)
+            bot.send_message(text=message, chat_id=chat_id)
+        except Exception as err:
+            logger.warning('Бот упал')
+            logger.error(err, exc_info=True)
 
 
 if __name__ == '__main__':
+    load_dotenv()
+    log_bot_token = os.environ['LOG_BOT_TOKEN']
+    chat_id = os.environ['CHAT_ID']
+    log_bot = telegram.Bot(token=log_bot_token)
+
+    logger = logging.getLogger('Logger')
+    logger.setLevel(logging.WARNING)
+    logger.addHandler(TelegramLogsHandler(log_bot, chat_id))
+
     main()
