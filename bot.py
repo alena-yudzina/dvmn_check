@@ -8,6 +8,9 @@ import telegram
 from dotenv import load_dotenv
 
 
+logger = logging.getLogger('Logger')
+
+
 class TelegramLogsHandler(logging.Handler):
 
     def __init__(self, tg_bot, chat_id):
@@ -39,13 +42,17 @@ def form_message(lesson_info):
 
 
 def main():
-    bot_token = os.environ['BOT_TOKEN']
+    load_dotenv()
+    log_bot_token = os.environ['LOG_BOT_TOKEN']
     chat_id = os.environ['CHAT_ID']
+    bot_token = os.environ['BOT_TOKEN']
     dvmn_token = os.environ['DVMN_TOKEN']
-
+    
+    log_bot = telegram.Bot(token=log_bot_token)
     bot = telegram.Bot(token=bot_token)
 
-    logger.warning('Бот запущен')
+    logger.setLevel(logging.WARNING)
+    logger.addHandler(TelegramLogsHandler(log_bot, chat_id))
 
     headers = {
         'Authorization': dvmn_token
@@ -76,19 +83,9 @@ def main():
 
             message = form_message(lesson_info)
             bot.send_message(text=message, chat_id=chat_id)
-        except Exception as err:
-            logger.warning('Бот упал')
-            logger.error(err, exc_info=True)
+        except telegram.error.TelegramError:
+            logger.exception('Проблема с телеграмом')
 
 
 if __name__ == '__main__':
-    load_dotenv()
-    log_bot_token = os.environ['LOG_BOT_TOKEN']
-    chat_id = os.environ['CHAT_ID']
-    log_bot = telegram.Bot(token=log_bot_token)
-
-    logger = logging.getLogger('Logger')
-    logger.setLevel(logging.WARNING)
-    logger.addHandler(TelegramLogsHandler(log_bot, chat_id))
-
     main()
