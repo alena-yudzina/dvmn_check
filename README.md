@@ -23,6 +23,15 @@ pip install -r requirements.txt
 python3 bot.py
 ```
 
+### Запуск с помощью `Docker`
+
+Использование с Docker показано ниже. Предварительно заполните ENV переменные, указанные выше, в Dockerfile.
+
+```
+docker build -t dvmn_check .
+docker run dvmn_check
+```
+
 ### Цель проекта
 
 Код написан в образовательных целях на онлайн-курсе для веб-разработчиков [dvmn.org](https://dvmn.org/).
